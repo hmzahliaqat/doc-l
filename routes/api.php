@@ -18,10 +18,12 @@ Route::post('/logout', [AuthController::class, 'logout']);
 Route::post('/register', [AuthController::class, 'register']);
 
 
-Route::prefix('documents')->controller(DocumentController::class)->group(function () {
+Route:: prefix('documents')->controller(DocumentController::class)->group(function () {
     Route::get('/', 'index');
     Route::post('/', 'store');
     Route::put('/{id}', 'update');
+    Route::post('/share', 'shareDocument');
+    Route::get('/track', 'track');
     Route::delete('/{id}', 'destroy');
     Route::post('/{id}/archive', 'archive');
     Route::post('/{id}/trash', 'trash');
@@ -29,6 +31,7 @@ Route::prefix('documents')->controller(DocumentController::class)->group(functio
     Route::post('/{id}/restore', 'restore');
     Route::delete('/{id}/force', 'forceDelete');
     Route::get('/archive', 'listArchive');
+    Route::get('{shared_document_id}/{document_pdf_id}/{employeeId}/employee-view', 'employeeView');
 });
 
 Route::prefix('dashboard')->controller(DashboardController::class)->group(function () {
@@ -42,6 +45,10 @@ Route::prefix('employees')->controller(EmployeesController::class)->group(functi
     Route::post('/', 'save');
     Route::delete('/delete', 'delete');
     Route::post('/import', 'import');
-
-
 });
+
+Route::prefix('partials')->controller(\App\Http\Controllers\SignatureController::class)->group(function () {
+    Route::get('/{employeeId}/{type}', 'index');
+    Route::post('/', 'store');
+});
+

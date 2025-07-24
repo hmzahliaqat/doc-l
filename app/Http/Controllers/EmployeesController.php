@@ -13,21 +13,19 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use League\Csv\Reader;
+use Symfony\Component\HttpFoundation\Response;
 
 class EmployeesController extends Controller
 {
-
     public function index()
     {
         $employees = User::with('employees')->first()->employees;
 
-        return response()->json($employees, 200);
+        return response()->json($employees, Response::HTTP_OK);
     }
-
 
     public function save(StoreEmployeeRequest $request)
     {
-
         if ($request->has('id')) {
             $employee = Employee::find($request->id);
 
@@ -36,36 +34,36 @@ class EmployeesController extends Controller
                 $employee->email = $request->email;
                 $employee->save();
             }
-            return response()->json($employee, 200);
+
+            return response()->json($employee, Response::HTTP_OK);
         } else {
             $employee = Employee::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'user_id' => Auth::id(),
             ]);
-            return response()->json($employee, 200);
+
+            return response()->json($employee, Response::HTTP_OK);
         }
     }
-
 
     public function delete(Request $request)
     {
         if ($request->has('ids')) {
             // Bulk delete
             Employee::whereIn('id', $request->ids)->delete();
-            return response()->json('Employees deleted', 200);
+            return response()->json('Employees deleted', Response::HTTP_OK);
         }
 
         if ($request->has('id')) {
             // Single delete
             $employee = Employee::findOrFail($request->id);
             $employee->delete();
-            return response()->json('Employee deleted', 200);
+            return response()->json('Employee deleted', Response::HTTP_OK);
         }
 
-        return response()->json(['error' => 'No employee ID(s) provided'], 400);
+        return response()->json(['error' => 'No employee ID(s) provided'], Response::HTTP_BAD_REQUEST);
     }
-
 
     public function import(Request $request)
     {
@@ -73,20 +71,16 @@ class EmployeesController extends Controller
             'file' => 'required|mimes:csv,txt|max:2048',
         ]);
 
-        // Load the CSV
         $csv = Reader::createFromPath($request->file('file')->getPathname(), 'r');
         $csv->setHeaderOffset(0);
 
-        // Normalize header names (lowercase)
         $normalizedHeaders = array_map('strtolower', $csv->getHeader());
-        $csv->setHeaderOffset(null); // Clear original header offset
+        $csv->setHeaderOffset(null);
 
         $records = $csv->getRecords();
-
         $employees = [];
 
         foreach ($records as $index => $record) {
-            // Normalize keys to lowercase
             $normalizedRecord = [];
             foreach ($normalizedHeaders as $i => $header) {
                 $normalizedRecord[$header] = $record[$i] ?? null;
@@ -101,7 +95,7 @@ class EmployeesController extends Controller
 
             if ($validator->fails()) {
                 Log::warning("Validation failed at row $index", $validator->errors()->toArray());
-                continue; // Skip this record
+                continue;
             }
 
             $employee = Employee::create([
@@ -123,6 +117,6 @@ class EmployeesController extends Controller
             'message' => 'CSV import completed',
             'imported_count' => count($employees),
             'data' => $employees,
-        ], 200);
+        ], Response::HTTP_OK);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -6,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
 {
@@ -23,7 +25,7 @@ class AuthController extends Controller
             'password' => bcrypt($validated['password']),
         ]);
 
-        return response()->json(['message' => 'Registered']);
+        return response()->json(['message' => 'Registered'], Response::HTTP_CREATED);
     }
 
     public function login(Request $request)
@@ -40,7 +42,7 @@ class AuthController extends Controller
 
         Auth::login($user);
 
-        return response()->json(['message' => 'Logged in']);
+        return response()->json(['message' => 'Logged in'], Response::HTTP_OK);
     }
 
     public function logout(Request $request)
@@ -49,6 +51,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return response()->json(['message' => 'Logged out']);
+        return response()->json(['message' => 'Logged out'], Response::HTTP_OK);
     }
 }

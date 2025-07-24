@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class SharedDocument extends Model
 {
     protected $fillable = [
+        'shared_document_name',
         'document_id',
         'user_id',
         'employee_id',
@@ -16,9 +17,15 @@ class SharedDocument extends Model
         'signed_at',
         'valid_for',
         'file_path',
-        'pdf_path'
-    ];
+        'pdf_path',
+        'pages',
+        'canvas',
+        'is_signable',
+        'can_add_picture',
+        'can_add_text',
+        'view_pages',
 
+    ];
 
 
     public function user()
