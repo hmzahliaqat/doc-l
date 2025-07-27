@@ -20,6 +20,28 @@ class   DocumentController extends Controller
         $this->documentService = $documentService;
     }
 
+    /**
+     * Download a document from the specified path
+     *
+     * @param string $path The path to the document
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse
+     */
+    public function downloadDocument($path)
+    {
+        $fullPath = storage_path('app/public/' . $path);
+
+        if (!file_exists($fullPath)) {
+            return response()->json([
+                'message' => 'File not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->file($fullPath, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . basename($fullPath) . '"'
+        ]);
+    }
+
     public function index()
     {
         $docs = $this->documentService->listActive();
@@ -149,5 +171,41 @@ class   DocumentController extends Controller
     {
         $docs = $this->documentService->listTrash();
         return response()->json($docs, Response::HTTP_OK);
+    }
+
+    /**
+     * Get all signed documents (where status = 1)
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function listSigned()
+    {
+        $docs = $this->documentService->listSigned();
+        return response()->json($docs, Response::HTTP_OK);
+    }
+
+    /**
+     * Send a reminder email for a shared document
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function remindDocument(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'required|exists:shared_documents,id',
+        ]);
+
+        try {
+            $this->documentService->remindEmployee($validated['id']);
+            return response()->json([
+                'message' => 'Reminder email sent successfully.',
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            Log::error('Document reminder failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

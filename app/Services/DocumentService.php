@@ -147,6 +147,36 @@ class DocumentService
         return $sharedDocument;
     }
 
+    /**
+     * Send a reminder email to an employee for a shared document
+     *
+     * @param int $sharedDocumentId The ID of the shared document
+     * @return bool Whether the reminder was sent successfully
+     * @throws \Exception If the shared document or employee is not found
+     */
+    public function remindEmployee(int $sharedDocumentId): bool
+    {
+        $sharedDocument = SharedDocument::find($sharedDocumentId);
+
+        if (!$sharedDocument) {
+            throw new \Exception("Shared document not found.");
+        }
+
+        $employee = Employee::find($sharedDocument->employee_id);
+
+        if (!$employee) {
+            throw new \Exception("Employee not found.");
+        }
+
+        $document_pdf_id = Document::where('id', $sharedDocument->document_id)->value('pdf_id');
+
+        Mail::to($employee->email)->send(new ShareDocumentMail($sharedDocument->id, $document_pdf_id, $sharedDocument->employee_id, 'reminder'));
+
+        $this->logDocumentAction(Auth::id(), $sharedDocument->document_id, $sharedDocument->employee_id, 'reminded');
+
+        return true;
+    }
+
 
     public function updateSharedDocument(Request $request)
     {
@@ -275,5 +305,15 @@ class DocumentService
     public function listTrash()
     {
         return Document::onlyTrashed()->get();
+    }
+
+    /**
+     * Get all signed documents (where status = 1)
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function listSigned()
+    {
+        return SharedDocument::getSigned();
     }
 }

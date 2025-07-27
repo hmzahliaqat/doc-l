@@ -23,6 +23,7 @@ Route:: prefix('documents')->controller(DocumentController::class)->group(functi
     Route::post('/', 'store');
     Route::put('/{id}', 'update');
     Route::post('/share', 'shareDocument');
+    Route::post('/remind', 'remindDocument');
     Route::get('/track', 'track');
     Route::delete('/{id}', 'destroy');
     Route::post('/{id}/archive', 'archive');
@@ -31,7 +32,9 @@ Route:: prefix('documents')->controller(DocumentController::class)->group(functi
     Route::post('/{id}/restore', 'restore');
     Route::delete('/{id}/force', 'forceDelete');
     Route::get('/archive', 'listArchive');
+    Route::get('/signed', 'listSigned');
     Route::get('{shared_document_id}/{document_pdf_id}/{employeeId}/employee-view', 'employeeView');
+    Route::get('/download/{path}', 'downloadDocument')->where('path', '.*');
 });
 
 Route::prefix('dashboard')->controller(DashboardController::class)->group(function () {

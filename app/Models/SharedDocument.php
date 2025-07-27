@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class SharedDocument extends Model
 {
@@ -69,5 +70,15 @@ class SharedDocument extends Model
         return Carbon::parse($this->created_at)
             ->addMinutes((int) $this->valid_for)
             ->isPast();
+    }
+
+    /**
+     * Get all signed documents (where status = 1)
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public static function getSigned()
+    {
+        return self::where(['status' => 1, 'user_id' => Auth::id()])->get();
     }
 }
