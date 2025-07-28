@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EmployeesController;
@@ -12,10 +11,10 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
+Route::middleware(['auth:sanctum'])->get('/user/role', [\App\Http\Controllers\UserController::class, 'getRole']);
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout']);
-Route::post('/register', [AuthController::class, 'register']);
+
+
 
 
 Route:: prefix('documents')->controller(DocumentController::class)->group(function () {
@@ -54,4 +53,14 @@ Route::prefix('partials')->controller(\App\Http\Controllers\SignatureController:
     Route::get('/{employeeId}/{type}', 'index');
     Route::post('/', 'store');
 });
+
+// User Reports Routes - Only accessible by super-admin
+Route::prefix('reports/users')
+    ->middleware(['auth:sanctum', 'role:super-admin'])
+    ->controller(\App\Http\Controllers\Reports\UserReportController::class)
+    ->group(function () {
+        Route::get('/registration-trends', 'registrationTrends');
+        Route::get('/active-users', 'activeUsers');
+        Route::get('/storage-usage', 'storageUsage');
+    });
 

@@ -21,7 +21,7 @@ class DocumentService
     use LogsDocumentActions;
     public function listActive()
     {
-        return Document::where('is_archived', false)->get();
+        return Document::where('user_id', Auth::id())->get();
     }
 
     public function store(Request $request)
