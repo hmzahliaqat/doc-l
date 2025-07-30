@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
-class   DocumentController extends Controller
+class DocumentController extends Controller
 {
     public DocumentService $documentService;
 

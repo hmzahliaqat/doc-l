@@ -64,3 +64,8 @@ Route::prefix('reports/users')
         Route::get('/storage-usage', 'storageUsage');
     });
 
+Route::prefix('sp')->controller(\App\Http\Controllers\SuperAdminController::class)->group(function () {
+    Route::get('/stats', 'getStats');
+    Route::get('/company-with-detail', 'companiesDetails');
+
+});

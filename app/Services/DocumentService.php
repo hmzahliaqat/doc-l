@@ -49,15 +49,19 @@ class DocumentService
         $filePath = 'pdfs/' . $filename;
         Storage::disk('public')->put($filePath, $decoded);
 
-        return Document::create([
+     $document = Document::create([
             'pdf_id' => $data['PDFId'],
             'name' => $data['name'],
             'file_path' => $filePath,
             'pages' => $data['pages'],
             'canvas' => $data['canvas'] ?? null,
-            'user_id' => 1, // Replace with auth()->id()
+            'user_id' => Auth::id(),
             'update_date' => $data['updateDate'],
         ]);
+
+        $this->logDocumentAction(Auth::id(), $document->id, null, 'created');
+
+        return $document;
     }
 
     public function update(Request $request, string $pdfId)
@@ -86,6 +90,7 @@ class DocumentService
             Storage::disk('public')->put($filePath, $decoded);
             $data['file_path'] = $filePath;
         }
+        $this->logDocumentAction(Auth::id(), $document->id, null, 'updated');
 
         $document->update($data);
         return $document;
