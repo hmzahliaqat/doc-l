@@ -37,3 +37,4 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('logout');
 
 Route::post('/user/profile-information', [\App\Http\Controllers\Profile\UpdateProfileController::class, 'profileInformation']);
+Route::put('/user/password', [\App\Http\Controllers\Profile\UpdateProfileController::class, 'updatePassword']);
