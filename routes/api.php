@@ -34,6 +34,7 @@ Route:: prefix('documents')->controller(DocumentController::class)->group(functi
     Route::get('/signed', 'listSigned');
     Route::get('{shared_document_id}/{document_pdf_id}/{employeeId}/employee-view', 'employeeView');
     Route::get('/download/{path}', 'downloadDocument')->where('path', '.*');
+    Route::get('/external/{id}', 'externalDoc');
 });
 
 Route::prefix('dashboard')->controller(DashboardController::class)->group(function () {

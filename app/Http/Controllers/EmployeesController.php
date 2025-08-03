@@ -19,7 +19,7 @@ class EmployeesController extends Controller
 {
     public function index()
     {
-        $employees = User::with('employees')->first()->employees;
+        $employees = Employee::where('user_id', Auth::id())->get();
 
         return response()->json($employees, Response::HTTP_OK);
     }

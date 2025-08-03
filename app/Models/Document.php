@@ -46,9 +46,9 @@ class Document extends Model
     }
 
 
-    public function getFileUrlAttribute(): string
+    public function getFilePathAttribute($attribute): string
     {
-        return asset('storage/' . $this->file_path);
+        return asset('storage/' . $attribute);
     }
 
     public function getPdfUrlAttribute(): string

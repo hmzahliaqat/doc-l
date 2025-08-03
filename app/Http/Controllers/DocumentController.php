@@ -48,6 +48,14 @@ class DocumentController extends Controller
         return DocumentResource::collection($docs)->toArray(request());
     }
 
+    public function externalDoc($id)
+    {
+       $doc = Document::where('pdf_id', $id)->firstOrFail();
+
+       return response()->json($doc, Response::HTTP_OK);
+
+    }
+
     public function store(Request $request)
     {
         $isResave = $request->boolean('isResave');
@@ -105,12 +113,12 @@ class DocumentController extends Controller
     {
         $shared_document = SharedDocument::find($shared_document_id);
 
-        if ($shared_document->isExpired()) {
-            return view('link-expired');
-        }
+//        if ($shared_document->isExpired()) {
+//            return view('link-expired');
+//        }
 
         $vueUrl = env('FRONTEND_URL') . "/view-document?shared_document_id=$shared_document_id&document_pdf_id=$document_pdf_id&employee_id=$employee_id&is_employee=true";
-
+         dd($vueUrl);
         return redirect()->away($vueUrl);
     }
 

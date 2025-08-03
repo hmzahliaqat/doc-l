@@ -11,6 +11,7 @@ use App\Models\SharedDocument;
 use App\Traits\LogsDocumentActions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -121,8 +122,8 @@ class DocumentService
         if ($alreadyShared) {
             throw new \Exception("Document already shared with this employee.");
         }
-
         $this->shareWithEmployee($document->id, $data['employee_id']);
+
         $this->logDocumentAction(Auth::id(), $document->id, $data['employee_id'], 'shared');
 
         return $document;
@@ -131,26 +132,34 @@ class DocumentService
 
     protected function shareWithEmployee(int $documentId, int $employeeId): SharedDocument
     {
-        $employee = Employee::find($employeeId);
-        if (!$employee) {
-            throw new \Exception("Employee not found.");
+        try {
+
+           DB::beginTransaction();
+            $employee = Employee::find($employeeId);
+            if (!$employee) {
+                throw new \Exception("Employee not found.");
+            }
+
+            $sharedDocument = SharedDocument::create([
+                'user_id' => $employee->user_id,
+                'document_id' => $documentId,
+                'employee_id' => $employeeId,
+                'access_hash' => hash('sha256', Str::random(40) . time() . config('app.key')),
+                'status' => 0,
+            ]);
+
+            $document_pdf_id = Document::where('id', $documentId)->value('pdf_id');
+
+
+            Mail::to($employee->email)->send(new ShareDocumentMail($sharedDocument->id, $document_pdf_id, $employeeId, 'mail'));
+                  DB::commit();
+            return $sharedDocument;
         }
-
-        $sharedDocument = SharedDocument::create([
-            'user_id' => $employee->user_id,
-            'document_id' => $documentId,
-            'employee_id' => $employeeId,
-            'access_hash' => hash('sha256', Str::random(40) . time() . config('app.key')),
-            'status' => 0,
-        ]);
-
-        $document_pdf_id = Document::where('id', $documentId)->value('pdf_id');
-
-
-        Mail::to($employee->email)->send(new ShareDocumentMail($sharedDocument->id, $document_pdf_id, $employeeId, 'mail'));
-
-        return $sharedDocument;
-    }
+        catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+        }
 
     /**
      * Send a reminder email to an employee for a shared document
