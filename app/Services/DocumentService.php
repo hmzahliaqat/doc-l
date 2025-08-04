@@ -222,11 +222,11 @@ class DocumentService
     public function trackDocument()
     {
 
-        $users = SharedDocument::with('user', 'document', 'employee')->get();
+        $users = SharedDocument::where('user_id', Auth::id())->with('user', 'document', 'employee')->get();
 
-        $totalSharedDocumentCount = SharedDocument::get()->count();
-        $totalSignedDocumentCount = SharedDocument::where('status', 1)->get()->count();
-        $totalPendingDocumentCount = SharedDocument::where('status', 0)->get()->count();
+        $totalSharedDocumentCount = SharedDocument::where('user_id', Auth::id())->get()->count();
+        $totalSignedDocumentCount = SharedDocument::where('user_id', Auth::id())->where('status', 1)->get()->count();
+        $totalPendingDocumentCount = SharedDocument::where('user_id', Auth::id())->where('status', 0)->get()->count();
 
         return ([
             'users' => $users,

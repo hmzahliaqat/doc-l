@@ -35,6 +35,9 @@ Route:: prefix('documents')->controller(DocumentController::class)->group(functi
     Route::get('{shared_document_id}/{document_pdf_id}/{employeeId}/employee-view', 'employeeView');
     Route::get('/download/{path}', 'downloadDocument')->where('path', '.*');
     Route::get('/external/{id}', 'externalDoc');
+    Route::post('/download-signed/', 'download');
+    // Add a specific route for cross-origin downloads that doesn't require CSRF
+    Route::middleware('cors')->post('/download-cors/', 'downloadCors');
 });
 
 Route::prefix('dashboard')->controller(DashboardController::class)->group(function () {

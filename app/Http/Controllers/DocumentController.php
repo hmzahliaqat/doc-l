@@ -118,7 +118,6 @@ class DocumentController extends Controller
 //        }
 
         $vueUrl = env('FRONTEND_URL') . "/view-document?shared_document_id=$shared_document_id&document_pdf_id=$document_pdf_id&employee_id=$employee_id&is_employee=true";
-         dd($vueUrl);
         return redirect()->away($vueUrl);
     }
 
@@ -215,5 +214,88 @@ class DocumentController extends Controller
                 'message' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    public function download(Request $request)
+    {
+        $path = $request->file_name;
+        Log::info('Downloading file: ' . $path);
+
+        if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
+        $file = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
+        $filename = basename($path);
+
+        if (!file_exists($file)) {
+            return response()->json(['error' => 'File not found on disk'], 404);
+        }
+
+        // Get file info
+        $fileSize = filesize($file);
+        $mimeType = mime_content_type($file);
+
+        // Use file() for standard downloads
+        return response()->file($file, [
+            'Content-Type' => $mimeType,
+            'Content-Length' => $fileSize,
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0'
+        ]);
+    }
+
+    /**
+     * Special method for cross-origin downloads that bypasses CSRF protection
+     * and adds explicit CORS headers
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function downloadCors(Request $request)
+    {
+        $path = $request->file_name;
+        Log::info('Cross-origin downloading file: ' . $path);
+
+        if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
+        $file = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
+        $filename = basename($path);
+
+        if (!file_exists($file)) {
+            return response()->json(['error' => 'File not found on disk'], 404);
+        }
+
+        // Get file info
+        $fileSize = filesize($file);
+        $mimeType = mime_content_type($file);
+
+        // Create a streaming response for better cross-origin handling
+        $stream = fopen($file, 'rb');
+
+        return response()->stream(
+            function() use ($stream) {
+                fpassthru($stream);
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            },
+            200,
+            [
+                'Content-Type' => $mimeType,
+                'Content-Length' => $fileSize,
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
+                'Access-Control-Allow-Origin' => config('cors.allowed_origins')[0],
+                'Access-Control-Allow-Credentials' => 'true',
+                'Access-Control-Expose-Headers' => 'Content-Disposition, Content-Type, Content-Length'
+            ]
+        );
     }
 }

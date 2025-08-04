@@ -46,10 +46,10 @@ class Document extends Model
     }
 
 
-    public function getFilePathAttribute($attribute): string
-    {
-        return asset('storage/' . $attribute);
-    }
+//    public function getFilePathAttribute($attribute): string
+//    {
+//        return asset('storage/' . $attribute);
+//    }
 
     public function getPdfUrlAttribute(): string
     {
