@@ -39,12 +39,13 @@ class RegisteredUserController extends Controller
         // Send email verification
         Mail::to($user->email)->send(new EmailVerificationMail($user));
 
-        Auth::login($user);
+        // Removed automatic login to redirect user to login page instead
 
         return response()->json([
             'user' => $user,
-            'message' => 'Registration successful! Please check your email to verify your account.',
-            'email_verification_sent' => true
+            'message' => 'Registration successful! Please check your email to verify your account and then login.',
+            'email_verification_sent' => true,
+            'redirect_to' => 'login'
         ], 201);
     }
 }

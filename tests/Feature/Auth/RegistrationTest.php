@@ -18,7 +18,15 @@ class RegistrationTest extends TestCase
             'password_confirmation' => 'password',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertNoContent();
+        // User should not be authenticated after registration
+        $this->assertGuest();
+
+        // Check that the response contains the expected JSON data
+        $response->assertStatus(201)
+                 ->assertJson([
+                     'message' => 'Registration successful! Please check your email to verify your account and then login.',
+                     'email_verification_sent' => true,
+                     'redirect_to' => 'login'
+                 ]);
     }
 }
