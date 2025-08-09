@@ -13,6 +13,18 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 
 Route::middleware(['auth:sanctum'])->get('/user/role', [\App\Http\Controllers\UserController::class, 'getRole']);
 
+// API Routes for Email Verification
+Route::middleware('auth:sanctum')->group(function () {
+    // Send verification email (POST /email/verification-notification)
+    Route::post('/email/verification-notification', [App\Http\Controllers\Auth\EmailVerificationController::class, 'store'])
+        ->middleware(['throttle:6,1'])
+        ->name('verification.send');
+
+    // Get verification status (GET /email/verification-status)
+    Route::get('/email/verification-status', [App\Http\Controllers\Auth\EmailVerificationController::class, 'show'])
+        ->name('verification.status');
+});
+
 
 
 
