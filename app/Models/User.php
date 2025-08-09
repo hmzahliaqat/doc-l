@@ -56,6 +56,13 @@ class User extends Authenticatable
         return $this->hasMany(Document::class);
     }
 
+    /**
+     * Get the user's OTP settings.
+     */
+    public function setting()
+    {
+        return $this->hasOne(Setting::class);
+    }
 
     // public function sharedDocuments()
     // {

@@ -13,6 +13,15 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 
 Route::middleware(['auth:sanctum'])->get('/user/role', [\App\Http\Controllers\UserController::class, 'getRole']);
 
+Route::middleware(['auth:sanctum'])->get('/user/otp-settings', [\App\Http\Controllers\UserController::class, 'getOtpSettings']);
+Route::middleware(['auth:sanctum'])->post('/user/otp-settings', [\App\Http\Controllers\UserController::class, 'updateOtpSettings']);
+
+// OTP Request and Verification Routes
+Route::post('/user/request-otp', [\App\Http\Controllers\UserController::class, 'requestOtp'])
+    ->middleware(['throttle:5,1']); // Limit to 5 requests per minute
+Route::post('/user/verify-otp', [\App\Http\Controllers\UserController::class, 'verifyOtp'])
+    ->middleware(['throttle:5,1']); // Limit to 5 attempts per minute
+
 // API Routes for Email Verification
 Route::middleware('auth:sanctum')->group(function () {
     // Send verification email (POST /email/verification-notification)
