@@ -89,8 +89,19 @@ Route::prefix('reports/users')
         Route::get('/storage-usage', 'storageUsage');
     });
 
-Route::prefix('sp')->controller(\App\Http\Controllers\SuperAdminController::class)->group(function () {
-    Route::get('/stats', 'getStats');
-    Route::get('/company-with-detail', 'companiesDetails');
+Route::middleware(['auth:sanctum'])
+    ->group(function () {
+        Route::apiResource('email-templates', \App\Http\Controllers\API\EmailTemplateController::class);
+        Route::post('email-templates/{emailTemplate}/preview', [\App\Http\Controllers\API\EmailTemplateController::class, 'preview']);
+    });
 
-});
+Route::prefix('sp')
+    ->middleware(['auth:sanctum', 'role:super-admin'])
+    ->controller(\App\Http\Controllers\SuperAdminController::class)
+    ->group(function () {
+        Route::get('/stats', 'getStats');
+        Route::get('/company-with-detail', 'companiesDetails');
+        Route::get('/superadmins', 'getSuperadmins');
+        Route::post('/superadmins', 'createSuperadmin');
+        Route::delete('/superadmins/{id}', 'deleteSuperadmin');
+    });

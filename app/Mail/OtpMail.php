@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\EmailTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -9,7 +10,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class OtpMail extends Mailable
+class OtpMail extends TemplateMail
 {
     use Queueable, SerializesModels;
 
@@ -24,31 +25,17 @@ class OtpMail extends Mailable
         public string $email
     )
     {
-        //
-    }
+        // Find the OTP Email template
+        $template = EmailTemplate::where('name', 'OTP Email')->firstOrFail();
 
-    /**
-     * Get the message envelope.
-     */
-    public function envelope(): Envelope
-    {
-        return new Envelope(
-            subject: 'Your One-Time Password (OTP)',
-        );
-    }
+        // Prepare data for the template
+        $templateData = [
+            'otpCode' => $this->otpCode,
+            'email' => $this->email,
+        ];
 
-    /**
-     * Get the message content definition.
-     */
-    public function content(): Content
-    {
-        return new Content(
-            markdown: 'emails.otp',
-            with: [
-                'otpCode' => $this->otpCode,
-                'email' => $this->email,
-            ],
-        );
+        // Call parent constructor with template and data
+        parent::__construct($template, $templateData);
     }
 
     /**

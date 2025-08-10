@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\EmailTemplate;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,53 +12,33 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\URL;
 
-class EmailVerificationMail extends Mailable
+class EmailVerificationMail extends TemplateMail
 {
     use Queueable, SerializesModels;
-
-    /**
-     * The user instance.
-     *
-     * @var \App\Models\User
-     */
-    public $user;
 
     /**
      * Create a new message instance.
      */
     public function __construct(User $user)
     {
-        $this->user = $user;
-    }
-
-    /**
-     * Get the message envelope.
-     */
-    public function envelope(): Envelope
-    {
-        return new Envelope(
-            subject: 'Verify Your Email Address',
-        );
-    }
-
-    /**
-     * Get the message content definition.
-     */
-    public function content(): Content
-    {
+        // Generate verification URL
         $verificationUrl = URL::temporarySignedRoute(
             'verification.verify',
             now()->addMinutes(60),
-            ['id' => $this->user->id, 'hash' => sha1($this->user->email)]
+            ['id' => $user->id, 'hash' => sha1($user->email)]
         );
 
-        return new Content(
-            view: 'emails.verify-email',
-            with: [
-                'user' => $this->user,
-                'verificationUrl' => $verificationUrl,
-            ],
-        );
+        // Find the Email Verification template
+        $template = EmailTemplate::where('name', 'Email Verification')->firstOrFail();
+
+        // Prepare data for the template
+        $templateData = [
+            'user' => $user,
+            'verificationUrl' => $verificationUrl,
+        ];
+
+        // Call parent constructor with template and data
+        parent::__construct($template, $templateData);
     }
 
     /**
