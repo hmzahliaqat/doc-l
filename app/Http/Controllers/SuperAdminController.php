@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use App\Models\Log;
+use App\Models\SuperAdminSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules;
 use Spatie\Permission\Models\Role;
@@ -128,6 +130,148 @@ class SuperAdminController extends Controller
 
        return response()->json([
            'message' => 'Superadmin deleted successfully'
+       ]);
+   }
+
+   /**
+    * Get the SuperAdmin settings
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+   public function getSettings()
+   {
+       // Get the first settings record or create a new one if none exists
+       $settings = SuperAdminSetting::first() ?? new SuperAdminSetting();
+
+       // If app_logo exists, generate a full URL
+       if ($settings->app_logo) {
+           $settings->app_logo_url = url(Storage::url($settings->app_logo));
+       }
+
+       return response()->json($settings);
+   }
+
+   /**
+    * Update the SuperAdmin settings
+    *
+    * @param Request $request
+    * @return \Illuminate\Http\JsonResponse
+    */
+   public function updateSettings(Request $request)
+   {
+       $validator = Validator::make($request->all(), [
+           'app_name' => 'nullable|string|max:255',
+           'app_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+           'video_url' => 'nullable|url|max:255',
+           'stripe_app_key' => 'nullable|string|max:255',
+           'stripe_secret_key' => 'nullable|string|max:255',
+       ]);
+
+       if ($validator->fails()) {
+           return response()->json([
+               'message' => 'Validation failed',
+               'errors' => $validator->errors()
+           ], 422);
+       }
+
+       // Get the first settings record or create a new one if none exists
+       $settings = SuperAdminSetting::first();
+       if (!$settings) {
+           $settings = new SuperAdminSetting();
+       }
+
+       // Update text fields
+       if ($request->has('app_name')) {
+           $settings->app_name = $request->app_name;
+       }
+
+       if ($request->has('video_url')) {
+           $settings->video_url = $request->video_url;
+       }
+
+       if ($request->has('stripe_app_key')) {
+           $settings->stripe_app_key = $request->stripe_app_key;
+       }
+
+       if ($request->has('stripe_secret_key')) {
+           $settings->stripe_secret_key = $request->stripe_secret_key;
+       }
+
+       // Handle logo upload
+       if ($request->hasFile('app_logo')) {
+           // Delete old logo if exists
+           if ($settings->app_logo) {
+               Storage::delete($settings->app_logo);
+           }
+
+           // Store the new logo
+           $path = $request->file('app_logo')->storeAs('logos', time() . '_' . $request->file('app_logo')->getClientOriginalName(), 'public');
+           $settings->app_logo = $path;
+       }
+
+       $settings->save();
+
+       // Generate full URL for app_logo
+       if ($settings->app_logo) {
+           $settings->app_logo_url = url(Storage::url($settings->app_logo));
+       }
+
+       return response()->json([
+           'message' => 'Settings updated successfully',
+           'settings' => $settings
+       ]);
+   }
+
+   /**
+    * Delete the SuperAdmin settings
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+   public function deleteSettings()
+   {
+       $settings = SuperAdminSetting::first();
+
+       if (!$settings) {
+           return response()->json([
+               'message' => 'No settings found to delete'
+           ], 404);
+       }
+
+       // Delete logo file if exists
+       if ($settings->app_logo) {
+           Storage::delete($settings->app_logo);
+       }
+
+       // Delete the settings record
+       $settings->delete();
+
+       return response()->json([
+           'message' => 'Settings deleted successfully'
+       ]);
+   }
+
+   /**
+    * Get the SuperAdmin settings for guest access
+    * Returns only app_name, app_logo, and video_url
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+   public function getGuestSettings()
+   {
+       // Get the first settings record or create a new one if none exists
+       $settings = SuperAdminSetting::first() ?? new SuperAdminSetting();
+
+       // If app_logo exists, generate a full URL
+       if ($settings->app_logo) {
+           $settings->app_logo_url = url(Storage::url($settings->app_logo));
+       }
+
+       // Return only the specified fields
+       return response()->json([
+           'app_name' => $settings->app_name,
+           'app_logo' => $settings->app_logo,
+           'app_logo_url' => $settings->app_logo_url ?? null,
+           'video_url' => $settings->video_url,
        ]);
    }
 

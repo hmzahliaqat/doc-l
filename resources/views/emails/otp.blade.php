@@ -17,6 +17,10 @@
             text-align: center;
             margin-bottom: 30px;
         }
+        .logo {
+            max-width: 200px;
+            margin-bottom: 15px;
+        }
         .content {
             background-color: #f9f9f9;
             padding: 20px;
@@ -49,6 +53,9 @@
 </head>
 <body>
     <div class="header">
+        @if(isset($appSettings['app_logo_url']))
+            <img class="logo" src="{{ $appSettings['app_logo_url'] }}" alt="{{ $appSettings['app_name'] }} Logo">
+        @endif
         <h1>Your One-Time Password (OTP)</h1>
     </div>
 
@@ -66,11 +73,11 @@
         </div>
 
         <p>Thanks,<br>
-        {{ config('app.name') }}</p>
+        {{ $appSettings['app_name'] }}</p>
     </div>
 
     <div class="footer">
-        <p>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
+        <p>&copy; {{ date('Y') }} {{ $appSettings['app_name'] }}. All rights reserved.</p>
     </div>
 </body>
 </html>

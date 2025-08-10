@@ -104,4 +104,15 @@ Route::prefix('sp')
         Route::get('/superadmins', 'getSuperadmins');
         Route::post('/superadmins', 'createSuperadmin');
         Route::delete('/superadmins/{id}', 'deleteSuperadmin');
+
+        // SuperAdmin Settings Routes
+        Route::get('/settings', 'getSettings');
+        Route::post('/settings', 'updateSettings');
+        Route::delete('/settings', 'deleteSettings');
     });
+
+// Test route for SuperAdminSettings integration
+Route::get('/test-email-template', [App\Http\Controllers\TestController::class, 'testEmailTemplate']);
+
+// Guest accessible settings route
+Route::get('/settings/guest', [\App\Http\Controllers\SuperAdminController::class, 'getGuestSettings']);

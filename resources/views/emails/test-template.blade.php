@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Verify Your Email Address</title>
+    <title>Test SuperAdminSettings Integration</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -26,20 +26,18 @@
             padding: 20px;
             border-radius: 5px;
         }
-        .button {
-            display: inline-block;
-            background-color: #3490dc;
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            margin: 20px 0;
-        }
         .footer {
             margin-top: 30px;
             font-size: 12px;
             color: #666;
             text-align: center;
+        }
+        .debug-info {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -48,23 +46,18 @@
         @if(isset($appSettings['app_logo_url']))
             <img class="logo" src="{{ $appSettings['app_logo_url'] }}" alt="{{ $appSettings['app_name'] }} Logo">
         @endif
-        <h1>Verify Your Email Address</h1>
+        <h1>Test Template</h1>
     </div>
 
     <div class="content">
-        <p>Hello {{ $user->name }},</p>
+        <p>This is a test template to verify that SuperAdminSettings are properly integrated.</p>
 
-        <p>Thank you for registering! Please click the button below to verify your email address:</p>
-
-        <div style="text-align: center;">
-            <a href="{{ $verificationUrl }}" class="button">Verify Email Address</a>
+        <div class="debug-info">
+            <h3>Debug Information:</h3>
+            <p><strong>App Name:</strong> {{ $appSettings['app_name'] ?? 'Not set' }}</p>
+            <p><strong>App Logo:</strong> {{ $appSettings['app_logo'] ?? 'Not set' }}</p>
+            <p><strong>App Logo URL:</strong> {{ $appSettings['app_logo_url'] ?? 'Not set' }}</p>
         </div>
-
-        <p>If you did not create an account, no further action is required.</p>
-
-        <p>If you're having trouble clicking the "Verify Email Address" button, copy and paste the URL below into your web browser:</p>
-
-        <p style="word-break: break-all;">{{ $verificationUrl }}</p>
     </div>
 
     <div class="footer">

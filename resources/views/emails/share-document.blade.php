@@ -1,7 +1,11 @@
 <section class="max-w-2xl px-6 py-8 mx-auto bg-white dark:bg-gray-900">
     <header>
         <a href="#">
-            <img class="w-auto h-7 sm:h-8" src="https://merakiui.com/images/full-logo.svg" alt="Logo">
+            @if(isset($appSettings['app_logo_url']))
+                <img class="w-auto h-7 sm:h-8" src="{{ $appSettings['app_logo_url'] }}" alt="{{ $appSettings['app_name'] }} Logo">
+            @else
+                {{ $appSettings['app_name'] }}
+            @endif
         </a>
     </header>
 
@@ -30,7 +34,7 @@
 
         <p class="mt-8 text-gray-600 dark:text-gray-300">
             Thanks, <br>
-            Your Company Team
+            {{ $appSettings['app_name'] }} Team
         </p>
     </main>
 
@@ -40,6 +44,6 @@
             If you no longer wish to receive such emails, you can <a href="#" class="text-blue-600 hover:underline dark:text-blue-400">unsubscribe</a> or <a href="#" class="text-blue-600 hover:underline dark:text-blue-400">manage preferences</a>.
         </p>
 
-        <p class="mt-3 text-gray-500 dark:text-gray-400">© {{ now()->year }} Your Company. All Rights Reserved.</p>
+        <p class="mt-3 text-gray-500 dark:text-gray-400">© {{ now()->year }} {{ $appSettings['app_name'] }}. All Rights Reserved.</p>
     </footer>
 </section>
