@@ -91,28 +91,76 @@ Route::prefix('reports/users')
 
 Route::middleware(['auth:sanctum'])
     ->group(function () {
+        // Email Templates Routes
         Route::apiResource('email-templates', \App\Http\Controllers\API\EmailTemplateController::class);
         Route::post('email-templates/{emailTemplate}/preview', [\App\Http\Controllers\API\EmailTemplateController::class, 'preview']);
+
+        // Subscription Routes for authenticated users
+        Route::controller(\App\Http\Controllers\SubscriptionController::class)
+            ->prefix('subscriptions')
+            ->group(function () {
+                Route::get('/', 'index');
+                Route::post('/subscribe', 'subscribe');
+                Route::put('/swap', 'swap');
+                Route::post('/cancel', 'cancel');
+                Route::post('/resume', 'resume');
+                Route::put('/payment-method', 'updatePaymentMethod');
+                Route::get('/plans', 'plans');
+                Route::get('/stripe-key', 'getStripeKey');
+            });
     });
 
+// Routes that don't require super-admin role
+Route::middleware(['auth:sanctum'])
+    ->prefix('sp')
+    ->group(function () {
+        // SuperAdmin Settings Routes without role check
+        Route::get('/settings', [\App\Http\Controllers\SuperAdminController::class, 'getSettings']);
+
+        // Subscription Plans Routes without role check
+        Route::get('/subscription-plans', [\App\Http\Controllers\SubscriptionPlanController::class, 'index']);
+        Route::get('/subscription-plans/{id}', [\App\Http\Controllers\SubscriptionPlanController::class, 'show']);
+    });
+
+// Routes that require super-admin role
 Route::prefix('sp')
     ->middleware(['auth:sanctum', 'role:super-admin'])
-    ->controller(\App\Http\Controllers\SuperAdminController::class)
     ->group(function () {
-        Route::get('/stats', 'getStats');
-        Route::get('/company-with-detail', 'companiesDetails');
-        Route::get('/superadmins', 'getSuperadmins');
-        Route::post('/superadmins', 'createSuperadmin');
-        Route::delete('/superadmins/{id}', 'deleteSuperadmin');
+        // SuperAdmin Controller Routes
+        Route::controller(\App\Http\Controllers\SuperAdminController::class)
+            ->group(function () {
+                Route::get('/stats', 'getStats');
+                Route::get('/company-with-detail', 'companiesDetails');
+                Route::get('/superadmins', 'getSuperadmins');
+                Route::post('/superadmins', 'createSuperadmin');
+                Route::delete('/superadmins/{id}', 'deleteSuperadmin');
 
-        // SuperAdmin Settings Routes
-        Route::get('/settings', 'getSettings');
-        Route::post('/settings', 'updateSettings');
-        Route::delete('/settings', 'deleteSettings');
+                // SuperAdmin Settings Routes that still need super-admin role
+                Route::post('/settings', 'updateSettings');
+                Route::delete('/settings', 'deleteSettings');
+            });
+
+        // Privacy Policy Routes (Super Admin only)
+        Route::post('/privacy-policy', [\App\Http\Controllers\PrivacyPolicyController::class, 'update']);
+
+        // Subscription Plans Routes (Super Admin only) except index and show
+        Route::controller(\App\Http\Controllers\SubscriptionPlanController::class)
+            ->prefix('subscription-plans')
+            ->group(function () {
+                Route::post('/', 'store');
+                Route::put('/{id}', 'update');
+                Route::delete('/{id}', 'destroy');
+                Route::patch('/{id}/toggle-active', 'toggleActive');
+            });
     });
 
 // Test route for SuperAdminSettings integration
 Route::get('/test-email-template', [App\Http\Controllers\TestController::class, 'testEmailTemplate']);
 
-// Guest accessible settings route
+// Guest accessible routes
 Route::get('/settings/guest', [\App\Http\Controllers\SuperAdminController::class, 'getGuestSettings']);
+Route::get('/subscriptions/plans/guest', [\App\Http\Controllers\SubscriptionController::class, 'guestPlans']);
+Route::get('/privacy-policy', [\App\Http\Controllers\PrivacyPolicyController::class, 'show']);
+
+// Stripe Webhook
+Route::post('/stripe/webhook', [\Laravel\Cashier\Http\Controllers\WebhookController::class, 'handleWebhook']);

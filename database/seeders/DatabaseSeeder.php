@@ -19,6 +19,9 @@ class DatabaseSeeder extends Seeder
         // Then call the super admin seeder to create the super admin user
         $this->call(SuperAdminSeeder::class);
 
+        // Create the default privacy policy
+        $this->call(PrivacyPolicySeeder::class);
+
         // Optionally create test users
         // User::factory(10)->create();
     }
