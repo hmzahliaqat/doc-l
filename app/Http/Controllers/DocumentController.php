@@ -170,7 +170,12 @@ class DocumentController extends Controller
             return view('link-expired');
         }
 
-        $vueUrl = env('FRONTEND_URL') . "/view-document?shared_document_id=$shared_document_id&document_pdf_id=$document_pdf_id&employee_id=$employee_id&is_employee=true";
+        // Ensure consistent case for the route path
+        $vueUrl = rtrim(env('FRONTEND_URL', 'http://localhost:3000'), '/') . "/view-document?shared_document_id=$shared_document_id&document_pdf_id=$document_pdf_id&employee_id=$employee_id&is_employee=true";
+
+        // Log the redirect URL for debugging
+        Log::info('Redirecting to frontend', ['url' => $vueUrl]);
+
         return redirect()->away($vueUrl);
     }
 
