@@ -5,16 +5,99 @@ namespace App\Http\Controllers;
 use App\Models\Document;
 use App\Models\Log;
 use App\Models\SuperAdminSetting;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules;
+use Laravel\Cashier\Subscription;
 use Spatie\Permission\Models\Role;
+use Stripe\Exception\ApiErrorException;
+use Stripe\StripeClient;
 
 class SuperAdminController extends Controller
 {
+   /**
+    * Get Stripe client instance
+    *
+    * @return StripeClient
+    */
+   private function getStripeClient()
+   {
+       $stripeSecret = config('cashier.secret');
+       return new StripeClient($stripeSecret);
+   }
+
+   /**
+    * Get subscription statistics including total subscribers and revenue
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+   public function getSubscriptionStats()
+   {
+       try {
+           // Get active subscriptions count
+           $activeSubscriptionsCount = Subscription::where('stripe_status', 'active')->count();
+
+           // Get total revenue from Stripe
+           $stripe = $this->getStripeClient();
+
+           // Get all successful payments (invoices)
+           $invoices = $stripe->invoices->all([
+               'status' => 'paid',
+               'limit' => 100, // Adjust as needed
+           ]);
+
+           // Calculate total revenue
+           $totalRevenue = 0;
+           foreach ($invoices->data as $invoice) {
+               $totalRevenue += $invoice->amount_paid;
+           }
+
+           // Convert from cents to dollars
+           $totalRevenue = $totalRevenue / 100;
+
+           // Get subscription plans with subscriber counts
+           $subscriptionPlans = [];
+
+           // Get all active plans from the SubscriptionPlan model
+           $plans = SubscriptionPlan::where('active', true)->get();
+
+           foreach ($plans as $plan) {
+               // Count active subscriptions for this plan
+               $subscriberCount = Subscription::where('stripe_status', 'active')
+                   ->where('stripe_price', $plan->stripe_price_id)
+                   ->count();
+
+               $subscriptionPlans[] = [
+                   'name' => $plan->name,
+                   'subscribers' => $subscriberCount
+               ];
+           }
+
+           return response()->json([
+               'success' => true,
+               'data' => [
+                   'active_subscribers' => $activeSubscriptionsCount,
+                   'total_revenue' => $totalRevenue,
+                   'subscription_plans' => $subscriptionPlans
+               ]
+           ]);
+       } catch (ApiErrorException $e) {
+           return response()->json([
+               'success' => false,
+               'message' => 'Error fetching subscription data from Stripe: ' . $e->getMessage()
+           ], 500);
+       } catch (\Exception $e) {
+           return response()->json([
+               'success' => false,
+               'message' => 'Error calculating subscription statistics: ' . $e->getMessage()
+           ], 500);
+       }
+   }
 
    public function getStats()
    {

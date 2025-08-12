@@ -38,11 +38,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-Route:: prefix('documents')->controller(DocumentController::class)->group(function () {
+Route::middleware(['auth:sanctum'])->prefix('documents')->controller(DocumentController::class)->group(function () {
     Route::get('/', 'index');
     Route::post('/', 'store');
     Route::put('/{id}', 'update');
     Route::post('/share', 'shareDocument');
+    Route::post('/bulk-share', 'bulkShareDocuments')->middleware(['throttle:10,1']); // Limit to 10 requests per minute
     Route::post('/remind', 'remindDocument');
     Route::get('/track', 'track');
     Route::delete('/{id}', 'destroy');
@@ -130,6 +131,7 @@ Route::prefix('sp')
         Route::controller(\App\Http\Controllers\SuperAdminController::class)
             ->group(function () {
                 Route::get('/stats', 'getStats');
+                Route::get('/subscription-stats', 'getSubscriptionStats');
                 Route::get('/company-with-detail', 'companiesDetails');
                 Route::get('/superadmins', 'getSuperadmins');
                 Route::post('/superadmins', 'createSuperadmin');

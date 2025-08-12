@@ -105,36 +105,61 @@ class DocumentService
             throw new \Exception("Document not found.");
         }
 
-        $existingShare = SharedDocument::where([
-            'document_id' => $document->id,
-            'employee_id' => $data['employee_id']
-        ])->first();
-
-        if ($existingShare && $existingShare->isExpired()) {
-            $existingShare->delete();
+        // Check if the authenticated user has access to this document
+        if ($document->user_id !== Auth::id()) {
+            throw new \Exception("You don't have permission to share this document.");
         }
 
-        $alreadyShared = SharedDocument::where([
-            'document_id' => $document->id,
-            'employee_id' => $data['employee_id']
-        ])->first();
-
-        if ($alreadyShared) {
-            throw new \Exception("Document already shared with this employee.");
+        // Convert single employee ID to array for consistent processing
+        $employeeIds = [];
+        if (isset($data['employee_id'])) {
+            $employeeIds = [$data['employee_id']];
+        } elseif (isset($data['employee_ids'])) {
+            $employeeIds = $data['employee_ids'];
         }
-        $this->shareWithEmployee($document->id, $data['employee_id']);
 
-        $this->logDocumentAction(Auth::id(), $document->id, $data['employee_id'], 'shared');
+        $shares = [];
 
-        return $document;
+        foreach ($employeeIds as $employeeId) {
+            $existingShare = SharedDocument::where([
+                'document_id' => $document->id,
+                'employee_id' => $employeeId
+            ])->first();
+
+            if ($existingShare && $existingShare->isExpired()) {
+                $existingShare->delete();
+                $existingShare = null;
+            }
+
+            if ($existingShare) {
+                // Include existing share in response
+                $shares[] = [
+                    'document_id' => $document->pdf_id,
+                    'employee_id' => $employeeId,
+                    'shared_at' => $existingShare->created_at->toIso8601String()
+                ];
+            } else {
+                // Create new share
+                $sharedDocument = $this->shareWithEmployee($document->id, $employeeId);
+
+                $shares[] = [
+                    'document_id' => $document->pdf_id,
+                    'employee_id' => $employeeId,
+                    'shared_at' => $sharedDocument->created_at->toIso8601String()
+                ];
+
+                $this->logDocumentAction(Auth::id(), $document->id, $employeeId, 'shared');
+            }
+        }
+
+        return $shares;
     }
 
 
     protected function shareWithEmployee(int $documentId, int $employeeId): SharedDocument
     {
         try {
-
-           DB::beginTransaction();
+            DB::beginTransaction();
             $employee = Employee::find($employeeId);
             if (!$employee) {
                 throw new \Exception("Employee not found.");
@@ -150,16 +175,99 @@ class DocumentService
 
             $document_pdf_id = Document::where('id', $documentId)->value('pdf_id');
 
-
             Mail::to($employee->email)->send(new ShareDocumentMail($sharedDocument->id, $document_pdf_id, $employeeId, 'mail'));
-                  DB::commit();
+            DB::commit();
             return $sharedDocument;
         }
         catch (\Exception $e) {
             DB::rollBack();
             throw $e;
         }
+    }
+
+    /**
+     * Share multiple documents with one or more employees
+     *
+     * @param array $data
+     * @return array
+     */
+    public function shareMultipleDocuments(array $data)
+    {
+        $documentIds = $data['document_ids'] ?? [];
+        $employeeIds = $data['employee_ids'] ?? [];
+
+        if (empty($documentIds) || empty($employeeIds)) {
+            throw new \Exception("Document IDs and employee IDs are required.");
         }
+
+        $allShares = [];
+        $totalShares = 0;
+        $unauthorizedDocuments = [];
+
+        foreach ($documentIds as $documentId) {
+            $document = Document::where('pdf_id', $documentId)->first();
+
+            if (!$document) {
+                continue; // Skip documents that don't exist
+            }
+
+            // Check if the authenticated user has access to this document
+            if ($document->user_id !== Auth::id()) {
+                $unauthorizedDocuments[] = $documentId;
+                continue; // Skip documents the user doesn't have permission to share
+            }
+
+            foreach ($employeeIds as $employeeId) {
+                $existingShare = SharedDocument::where([
+                    'document_id' => $document->id,
+                    'employee_id' => $employeeId
+                ])->first();
+
+                if ($existingShare && $existingShare->isExpired()) {
+                    $existingShare->delete();
+                    $existingShare = null;
+                }
+
+                if ($existingShare) {
+                    // Include existing share in response
+                    $allShares[] = [
+                        'document_id' => $document->pdf_id,
+                        'employee_id' => $employeeId,
+                        'shared_at' => $existingShare->created_at->toIso8601String()
+                    ];
+                } else {
+                    // Create new share
+                    try {
+                        $sharedDocument = $this->shareWithEmployee($document->id, $employeeId);
+
+                        $allShares[] = [
+                            'document_id' => $document->pdf_id,
+                            'employee_id' => $employeeId,
+                            'shared_at' => $sharedDocument->created_at->toIso8601String()
+                        ];
+
+                        $this->logDocumentAction(Auth::id(), $document->id, $employeeId, 'shared');
+                        $totalShares++;
+                    } catch (\Exception $e) {
+                        // Log error but continue with other shares
+                        \Log::error("Failed to share document {$document->pdf_id} with employee {$employeeId}: " . $e->getMessage());
+                    }
+                }
+            }
+        }
+
+        // If there were unauthorized documents, log them
+        if (!empty($unauthorizedDocuments)) {
+            \Log::warning("User " . Auth::id() . " attempted to share documents they don't own", [
+                'unauthorized_documents' => $unauthorizedDocuments
+            ]);
+        }
+
+        return [
+            'total_shares' => $totalShares,
+            'shares' => $allShares
+        ];
+    }
 
     /**
      * Send a reminder email to an employee for a shared document
@@ -207,14 +315,19 @@ class DocumentService
         Storage::disk('public')->put($path, base64_decode($base64Str));
 
         $shared_document = SharedDocument::find($request->shared_document_id);
-            $shared_document->shared_document_name = $fileName;
-            $shared_document->file_path = $path;
-            $shared_document->canvas = $request->canvas;
-            $shared_document->pages = $request->pages;
-            $shared_document->status = 1;
-            $shared_document->signed_at = now();
-            $shared_document->valid_for = 0;
-            $shared_document->save();
+
+        if (!$shared_document) {
+            throw new \Exception("Shared document not found with ID: " . $request->shared_document_id);
+        }
+
+        $shared_document->shared_document_name = $fileName;
+        $shared_document->file_path = $path;
+        $shared_document->canvas = $request->canvas;
+        $shared_document->pages = $request->pages;
+        $shared_document->status = 1;
+        $shared_document->signed_at = now();
+        $shared_document->valid_for = 0;
+        $shared_document->save();
 
         return $shared_document;
     }

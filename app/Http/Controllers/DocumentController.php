@@ -61,14 +61,25 @@ class DocumentController extends Controller
         $isResave = $request->boolean('isResave');
 
         if ($isResave) {
-            $doc = $this->documentService->updateSharedDocument($request);
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'message' => 'Shared PDF re-saved successfully.',
-                    'data' => $doc
-                ], Response::HTTP_OK);
-            } else {
-                return view('thank-you');
+            try {
+                $doc = $this->documentService->updateSharedDocument($request);
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'message' => 'Shared PDF re-saved successfully.',
+                        'data' => $doc
+                    ], Response::HTTP_OK);
+                } else {
+                    return view('thank-you');
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to update shared document', ['error' => $e->getMessage()]);
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'message' => 'Failed to update shared document: ' . $e->getMessage()
+                    ], Response::HTTP_NOT_FOUND);
+                } else {
+                    return view('error', ['message' => 'Failed to update shared document: ' . $e->getMessage()]);
+                }
             }
         }
 
@@ -92,18 +103,55 @@ class DocumentController extends Controller
     {
         $validated = $request->validate([
             'document_id' => 'required',
-            'employee_id' => 'required|exists:employees,id',
+            'employee_id' => 'required_without:employee_ids|exists:employees,id',
+            'employee_ids' => 'required_without:employee_id|array',
+            'employee_ids.*' => 'exists:employees,id',
         ]);
 
         try {
-            $doc = $this->documentService->share($validated);
+            $shares = $this->documentService->share($validated);
             return response()->json([
-                'message' => 'PDF shared successfully.',
-                'data' => $doc
+                'success' => true,
+                'message' => 'Document shared successfully',
+                'shares' => $shares
             ], Response::HTTP_CREATED);
         } catch (\Exception $e) {
             Log::error('Document sharing failed', ['error' => $e->getMessage()]);
             return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Share multiple documents with one or more employees
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function bulkShareDocuments(Request $request)
+    {
+        $validated = $request->validate([
+            'document_ids' => 'required|array',
+            'document_ids.*' => 'required',
+            'employee_ids' => 'required|array',
+            'employee_ids.*' => 'exists:employees,id',
+        ]);
+
+        try {
+            $result = $this->documentService->shareMultipleDocuments($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Documents shared successfully',
+                'total_shares' => $result['total_shares'],
+                'shares' => $result['shares']
+            ], Response::HTTP_CREATED);
+        } catch (\Exception $e) {
+            Log::error('Bulk document sharing failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
                 'message' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -113,9 +161,14 @@ class DocumentController extends Controller
     {
         $shared_document = SharedDocument::find($shared_document_id);
 
-//        if ($shared_document->isExpired()) {
-//            return view('link-expired');
-//        }
+        if (!$shared_document) {
+            Log::error('Shared document not found', ['shared_document_id' => $shared_document_id]);
+            return view('error', ['message' => 'Shared document not found. It may have been deleted or the link is invalid.']);
+        }
+
+        if ($shared_document->isExpired()) {
+            return view('link-expired');
+        }
 
         $vueUrl = env('FRONTEND_URL') . "/view-document?shared_document_id=$shared_document_id&document_pdf_id=$document_pdf_id&employee_id=$employee_id&is_employee=true";
         return redirect()->away($vueUrl);
