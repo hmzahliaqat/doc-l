@@ -358,4 +358,33 @@ class SuperAdminController extends Controller
        ]);
    }
 
-}
+   /**
+    * Get the application logo for API consumption
+    * Returns logo_url and alt_text in the format required by the frontend
+    *
+    * @return \Illuminate\Http\JsonResponse
+    */
+   public function getLogo()
+   {
+       // Get the first settings record or create a new one if none exists
+       $settings = SuperAdminSetting::first() ?? new SuperAdminSetting();
+
+       // If app_logo exists, generate a full URL
+       if ($settings->app_logo) {
+           $logo_url = url(Storage::url($settings->app_logo));
+       } else {
+           // Fallback to default logo
+           $logo_url = '/logo-dark.png';
+       }
+
+       // Use app_name as alt text, or fallback to default
+       $alt_text = $settings->app_name ?? 'Clickesignature';
+
+       // Return in the format required by the frontend
+       return response()->json([
+           'logo_url' => $logo_url,
+           'alt_text' => $alt_text
+       ]);
+   }
+
+ }

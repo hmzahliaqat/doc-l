@@ -161,6 +161,7 @@ Route::get('/test-email-template', [App\Http\Controllers\TestController::class, 
 
 // Guest accessible routes
 Route::get('/settings/guest', [\App\Http\Controllers\SuperAdminController::class, 'getGuestSettings']);
+Route::get('/settings/logo', [\App\Http\Controllers\SuperAdminController::class, 'getLogo']);
 Route::get('/subscriptions/plans/guest', [\App\Http\Controllers\SubscriptionController::class, 'guestPlans']);
 Route::get('/privacy-policy', [\App\Http\Controllers\PrivacyPolicyController::class, 'show']);
 
