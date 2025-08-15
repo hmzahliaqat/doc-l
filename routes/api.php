@@ -38,6 +38,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
+// Public routes - accessible without authentication
+Route::get('documents/{shared_document_id}/{document_pdf_id}/{employeeId}/employee-view', [DocumentController::class, 'employeeView']);
+Route::get('documents/external/{id}', [DocumentController::class, 'externalDoc']);
+
 Route::middleware(['auth:sanctum'])->prefix('documents')->controller(DocumentController::class)->group(function () {
     Route::get('/', 'index');
     Route::post('/', 'store');
@@ -54,9 +58,7 @@ Route::middleware(['auth:sanctum'])->prefix('documents')->controller(DocumentCon
     Route::delete('/{id}/force', 'forceDelete');
     Route::get('/archive', 'listArchive');
     Route::get('/signed', 'listSigned');
-    Route::get('{shared_document_id}/{document_pdf_id}/{employeeId}/employee-view', 'employeeView');
     Route::get('/download/{path}', 'downloadDocument')->where('path', '.*');
-    Route::get('/external/{id}', 'externalDoc');
     Route::post('/download-signed/', 'download');
     // Add a specific route for cross-origin downloads that doesn't require CSRF
     Route::middleware('cors')->post('/download-cors/', 'downloadCors');
