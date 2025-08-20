@@ -41,10 +41,10 @@ Route::middleware('auth:sanctum')->group(function () {
 // Public routes - accessible without authentication
 Route::get('documents/{shared_document_id}/{document_pdf_id}/{employeeId}/employee-view', [DocumentController::class, 'employeeView']);
 Route::get('documents/external/{id}', [DocumentController::class, 'externalDoc']);
+Route::post('/documents', [DocumentController::class, 'store']);
 
 Route::middleware(['auth:sanctum'])->prefix('documents')->controller(DocumentController::class)->group(function () {
     Route::get('/', 'index');
-    Route::post('/', 'store');
     Route::put('/{id}', 'update');
     Route::post('/share', 'shareDocument');
     Route::post('/bulk-share', 'bulkShareDocuments')->middleware(['throttle:10,1']); // Limit to 10 requests per minute
