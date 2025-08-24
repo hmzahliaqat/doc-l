@@ -385,4 +385,26 @@ class SubscriptionController extends Controller
             'data' => $plans
         ]);
     }
+
+    /**
+     * Check if the user has subscribed to any plan and return user creation date.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkSubscriptionStatus(Request $request)
+    {
+        $user = $request->user();
+
+        // Get original created_at timestamp (not formatted by the accessor)
+        $createdAt = $user->getOriginal('created_at');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'is_subscribed' => $user->subscribed(),
+                'created_at' => $createdAt
+            ]
+        ]);
+    }
 }

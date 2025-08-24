@@ -110,6 +110,8 @@ Route::middleware(['auth:sanctum'])
                 Route::put('/payment-method', 'updatePaymentMethod');
                 Route::get('/plans', 'plans');
                 Route::get('/stripe-key', 'getStripeKey');
+                // Check if user has an active subscription and get user creation date
+                Route::get('/status', 'checkSubscriptionStatus');
             });
     });
 
