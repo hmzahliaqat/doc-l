@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 
 trait LogsDocumentActions
 {
-    public function logDocumentAction(int $user_id, int $documentId, $employeeId = null, string $action)
+    public function logDocumentAction(int $user_id = null, int $documentId, $employeeId = null, string $action)
     {
         $logData = Log::create([
             'user_id'       => $user_id,

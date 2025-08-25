@@ -13,11 +13,14 @@ return new class extends Migration
     {
         Schema::create('shared_documents', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->text('shared_document_name')->nullable();
             $table->unsignedBigInteger('document_id');
             $table->unsignedBigInteger('employee_id');
             $table->string('access_hash', 64)->unique();
             $table->boolean('status')->default(true);
+            $table->json('canvas')->nullable();
+            $table->string('pages')->nullable();
             $table->timestamp('signed_at')->nullable();
             $table->integer('valid_for')->default(60);
             $table->string('file_path')->nullable();

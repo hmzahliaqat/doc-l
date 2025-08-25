@@ -60,7 +60,7 @@ class DocumentService
             'update_date' => $data['updateDate'],
         ]);
 
-        $this->logDocumentAction(Auth::id(), $document->id, null, 'created');
+            $this->logDocumentAction(Auth::id(), $document->id, null, 'created');
 
         return $document;
     }
@@ -328,6 +328,8 @@ class DocumentService
         $shared_document->signed_at = now();
         $shared_document->valid_for = 0;
         $shared_document->save();
+
+        $this->logDocumentAction($shared_document->user_id, $shared_document->document_id, $shared_document->employee_id, 'signed');
 
         return $shared_document;
     }
